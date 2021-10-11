@@ -1,8 +1,0 @@
-version: '3.4'
-
-services:
-  scrapingdsinterview:
-    image: scrapingdsinterview
-    build:
-      context: .
-      dockerfile: ./Dockerfile

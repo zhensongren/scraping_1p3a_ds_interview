@@ -6,13 +6,8 @@ import pandas as pd
 import csv
 import os 
 
-#chrome_options = set_chrome_options()
-#driver = webdriver.Chrome(options=chrome_options)
-driver = webdriver.Chrome()
-START_URL = "https://www.1point3acres.com/bbs/forum.php?mod=forumdisplay&fid=259&orderby=dateline&sortid=311&filter=author&orderby=dateline&sortid=311&page="
-
 # Helper function to set up the headless option of chrome in linux
-def set_chrome_options() -> None:
+def set_chrome_options():
     """Sets chrome options for Selenium.
     Chrome options for headless browser is enabled.
     """
@@ -85,6 +80,7 @@ def get_referrals(driver, START_URL, max_page_num=10, latest_id_from_CSV=None, l
     get_next_page = True
     # scrape the data from the page 1 to 50
     i = 1
+    print(f'scraping page {i}')
     while i<=max_page_num and get_next_page:
         url = START_URL + str(i)
         driver.get(url)
@@ -166,15 +162,16 @@ def insert_data(file_path, data):
     fieldnames = []
     if len(data)>0:
         fieldnames = list(data[0].keys())
-    else: print('no data scraped')
+    else: 
+        print('no new data was found and scraped')
+        return
+    old_data = []
     # Save the old data and headers
     if os.path.exists(file_path):
         with open(file_path, 'r', newline='', encoding='utf8') as csv_file:
             reader = csv.DictReader(csv_file)
             if reader.fieldnames is None:
                 reader.fieldnames = fieldnames
-                
-            old_data = []
             for row in reader:
                 old_data.append(row)
                 
@@ -191,14 +188,21 @@ def insert_data(file_path, data):
         
 # read the 1st row to the previous most recent id and date
 if os.path.exists('./interview_DS_US.csv'):
-    old_df = pd.read_csv('interview_DS_US.csv', nrows=1)
-    latest_id_from_CSV = old_df['post_id'][0]
-    latest_date_from_CSV = pd.to_datetime(old_df['Date'][0])
-else:   
-    latest_id_from_CSV = 0
-    latest_date_from_CSV = pd.to_datetime('1900-01-01')
+    try:
+        old_df = pd.read_csv('interview_DS_US.csv', nrows=1)
+        latest_id_from_CSV = old_df['post_id'][0]
+        latest_date_from_CSV = pd.to_datetime(old_df['Date'][0])
+    except:   
+        latest_id_from_CSV = 0
+        latest_date_from_CSV = pd.to_datetime('1900-01-01')
 
-refers = get_referrals(driver, START_URL, max_page_num=2, 
+
+chrome_options = set_chrome_options()
+driver = webdriver.Chrome(options=chrome_options)
+# driver = webdriver.Chrome()
+START_URL = "https://www.1point3acres.com/bbs/forum.php?mod=forumdisplay&fid=259&orderby=dateline&sortid=311&filter=author&orderby=dateline&sortid=311&page="
+
+refers = get_referrals(driver, START_URL, max_page_num=50, 
                        latest_id_from_CSV=latest_id_from_CSV, latest_date_from_CSV=latest_date_from_CSV)
 
 insert_data('./interview_DS_US.csv', data=refers)
